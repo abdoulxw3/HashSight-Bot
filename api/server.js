@@ -1,9 +1,8 @@
-import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import {
   msgVolume, activeContributors, memberGrowth,
-  topChannels, modActions, dailyTrend, peakHours, recentFeed
+  topChannels, modActions, dailyTrend, recentFeed
 } from './queries.js';
 
 const app  = express();
@@ -19,7 +18,6 @@ app.get('/api/growth',       (_, res) => res.json(memberGrowth()));
 app.get('/api/channels',     (_, res) => res.json(topChannels()));
 app.get('/api/moderation',   (_, res) => res.json(modActions()));
 app.get('/api/trend',        (_, res) => res.json(dailyTrend()));
-app.get('/api/heatmap',      (_, res) => res.json(peakHours()));
 app.get('/api/feed',         (_, res) => res.json(recentFeed()));
 
 app.listen(PORT, () => console.log(`📡 API running on port ${PORT}`));
