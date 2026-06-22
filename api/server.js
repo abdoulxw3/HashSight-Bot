@@ -1,7 +1,10 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
-import { msgVolume, activeContributors, memberGrowth, topChannels, modActions, dailyTrend, peakHours } from './queries.js';
+import {
+  msgVolume, activeContributors, memberGrowth,
+  topChannels, modActions, dailyTrend, peakHours, recentFeed
+} from './queries.js';
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -17,5 +20,6 @@ app.get('/api/channels',     (_, res) => res.json(topChannels()));
 app.get('/api/moderation',   (_, res) => res.json(modActions()));
 app.get('/api/trend',        (_, res) => res.json(dailyTrend()));
 app.get('/api/heatmap',      (_, res) => res.json(peakHours()));
+app.get('/api/feed',         (_, res) => res.json(recentFeed()));
 
 app.listen(PORT, () => console.log(`📡 API running on port ${PORT}`));

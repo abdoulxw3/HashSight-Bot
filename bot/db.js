@@ -13,6 +13,7 @@ db.exec(`
     channel_name TEXT,
     user_id      TEXT NOT NULL,
     username     TEXT,
+    content      TEXT,
     timestamp    INTEGER NOT NULL,
     is_bot       INTEGER DEFAULT 0
   );
@@ -41,8 +42,8 @@ db.exec(`
 `);
 
 const insertMessage = db.prepare(`
-  INSERT OR IGNORE INTO messages (id, channel_id, channel_name, user_id, username, timestamp, is_bot)
-  VALUES (@id, @channel_id, @channel_name, @user_id, @username, @timestamp, @is_bot)
+  INSERT OR IGNORE INTO messages (id, channel_id, channel_name, user_id, username, content, timestamp, is_bot)
+  VALUES (@id, @channel_id, @channel_name, @user_id, @username, @content, @timestamp, @is_bot)
 `);
 const insertMemberEvent = db.prepare(`
   INSERT INTO member_events (user_id, username, event, timestamp)
@@ -60,6 +61,7 @@ export function logMessage(msg) {
     channel_name: msg.channel?.name ?? null,
     user_id: msg.author.id,
     username: msg.author.username,
+    content: msg.content ? msg.content.slice(0, 300) : null,
     timestamp: Math.floor(msg.createdTimestamp / 1000),
     is_bot: msg.author.bot ? 1 : 0,
   });

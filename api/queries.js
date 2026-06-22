@@ -64,3 +64,13 @@ export function peakHours() {
     GROUP BY hour, dow ORDER BY hour, dow
   `).all(weeksAgo(4));
 }
+
+export function recentFeed(limit = 50) {
+  return db.prepare(`
+    SELECT username, channel_name, content, timestamp
+    FROM messages
+    WHERE is_bot = 0 AND content IS NOT NULL
+    ORDER BY timestamp DESC
+    LIMIT ?
+  `).all(limit);
+}
