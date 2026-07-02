@@ -60,3 +60,46 @@ export function recentFeed(limit = 50) {
     ORDER BY timestamp DESC LIMIT $limit
   `).all({ $limit: limit });
 }
+
+export function ticketStats() {
+  const open   = db.prepare(`SELECT COUNT(*) as n FROM tickets WHERE status='open'`).get().n;
+  const closed = db.prepare(`SELECT COUNT(*) as n FROM tickets WHERE status='closed'`).get().n;
+  const week   = db.prepare(`SELECT COUNT(*) as n FROM tickets WHERE opened_at > $t`).get({ $t: weeksAgo(1) }).n;
+  const month  = db.prepare(`SELECT COUNT(*) as n FROM tickets WHERE opened_at > $t`).get({ $t: daysAgo(30) }).n;
+  return { open, closed, total: open + closed, week, month };
+}
+
+export function ticketList(limit = 50) {
+  return db.prepare(`
+    SELECT
+      id, title, channel_name,
+      opener_id, opener_name,
+      closer_id, closer_name,
+      status, opened_at, closed_at
+    FROM tickets
+    ORDER BY opened_at DESC
+    LIMIT $limit
+  `).all({ $limit: limit });
+}
+
+export function topClosers(limit = 5) {
+  return db.prepare(`
+    SELECT closer_name, COUNT(*) as closed_count
+    FROM tickets
+    WHERE status='closed' AND closer_name IS NOT NULL AND closer_name != 'unknown'
+    GROUP BY closer_name
+    ORDER BY closed_count DESC
+    LIMIT $limit
+  `).all({ $limit: limit });
+}
+
+export function topOpeners(limit = 5) {
+  return db.prepare(`
+    SELECT opener_name, COUNT(*) as opened_count
+    FROM tickets
+    WHERE opener_name IS NOT NULL AND opener_name != 'unknown'
+    GROUP BY opener_name
+    ORDER BY opened_count DESC
+    LIMIT $limit
+  `).all({ $limit: limit });
+}

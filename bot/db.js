@@ -90,3 +90,51 @@ export function logModAction(entry) {
   });
 }
 export default db;
+
+// ── Tickets (forum channel posts) ────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS tickets (
+    id          TEXT PRIMARY KEY,
+    title       TEXT,
+    channel_name TEXT,
+    opener_id   TEXT,
+    opener_name TEXT,
+    closer_id   TEXT,
+    closer_name TEXT,
+    status      TEXT DEFAULT 'open' CHECK(status IN ('open','closed')),
+    opened_at   INTEGER NOT NULL,
+    closed_at   INTEGER
+  );
+  CREATE INDEX IF NOT EXISTS idx_ticket_status ON tickets(status);
+  CREATE INDEX IF NOT EXISTS idx_ticket_opened ON tickets(opened_at);
+`);
+
+const insertTicket = db.prepare(`
+  INSERT OR IGNORE INTO tickets (id, title, channel_name, opener_id, opener_name, status, opened_at)
+  VALUES ($id, $title, $channel_name, $opener_id, $opener_name, 'open', $opened_at)
+`);
+
+const closeTicket = db.prepare(`
+  UPDATE tickets SET status='closed', closer_id=$closer_id, closer_name=$closer_name, closed_at=$closed_at
+  WHERE id=$id
+`);
+
+export function logTicketOpen(thread) {
+  insertTicket.run({
+    $id: thread.id,
+    $title: thread.name ?? 'Untitled',
+    $channel_name: thread.parent?.name ?? 'unknown',
+    $opener_id: thread.ownerId ?? 'unknown',
+    $opener_name: thread.ownerId ?? 'unknown',
+    $opened_at: Math.floor(thread.createdTimestamp / 1000),
+  });
+}
+
+export function logTicketClose(threadId, closer) {
+  closeTicket.run({
+    $id: threadId,
+    $closer_id: closer?.id ?? 'unknown',
+    $closer_name: closer?.username ?? 'unknown',
+    $closed_at: Math.floor(Date.now() / 1000),
+  });
+}

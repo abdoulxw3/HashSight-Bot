@@ -37,18 +37,24 @@ export default function App() {
   const [summary, setSummary] = useState(null);
   const [trend,   setTrend]   = useState([]);
   const [feed,    setFeed]    = useState([]);
+  const [tickets, setTickets] = useState(null);
+  const [ticketList, setTicketList] = useState([]);
+  const [closers, setClosers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error,   setError]   = useState(null);
   const [updated, setUpdated] = useState(null);
 
   const load = useCallback(async () => {
     try {
-      const [s, t, f] = await Promise.all([
+      const [s, t, f, tk, tl, tc] = await Promise.all([
         fetch('/api/summary').then(r => r.json()),
         fetch('/api/trend').then(r => r.json()),
         fetch('/api/feed').then(r => r.json()),
+        fetch('/api/tickets').then(r => r.json()),
+        fetch('/api/tickets/list').then(r => r.json()),
+        fetch('/api/tickets/closers').then(r => r.json()),
       ]);
-      setSummary(s); setTrend(t); setFeed(f);
+      setSummary(s); setTrend(t); setFeed(f); setTickets(tk); setTicketList(tl); setClosers(tc);
       setUpdated(new Date().toLocaleTimeString()); setError(null);
     } catch { setError('Cannot reach API — make sure npm run api is running.'); }
     finally { setLoading(false); }
@@ -105,6 +111,13 @@ export default function App() {
           <div className="stat-label">Mod actions this week</div>
           <div className="stat-value">{fmt(moderation.week?.length ?? 0)}</div>
           <div className="stat-sub">{fmt(moderation.month)} this month</div>
+        </div>
+
+        <div className="stat-card">
+          <span className="stat-icon">🎫</span>
+          <div className="stat-label">Open tickets</div>
+          <div className="stat-value" style={{ color:'var(--yellow)' }}>{fmt(tickets?.open)}</div>
+          <div className="stat-sub">{fmt(tickets?.closed)} closed · {fmt(tickets?.week)} this week</div>
         </div>
       </div>
 
@@ -188,6 +201,65 @@ export default function App() {
         }
       </div>
 
+
+      <p className="section-title">Tickets</p>
+      <div className="mod-card">
+        <div style={{ display:'flex', gap:32, marginBottom:20, flexWrap:'wrap' }}>
+          <div className="bench-item"><span className="bench-label">Open</span><span className="bench-value" style={{color:'var(--yellow)'}}>{fmt(tickets?.open)}</span></div>
+          <div className="bench-divider"/>
+          <div className="bench-item"><span className="bench-label">Closed</span><span className="bench-value" style={{color:'var(--green)'}}>{fmt(tickets?.closed)}</span></div>
+          <div className="bench-divider"/>
+          <div className="bench-item"><span className="bench-label">This week</span><span className="bench-value">{fmt(tickets?.week)}</span></div>
+          <div className="bench-divider"/>
+          <div className="bench-item"><span className="bench-label">This month</span><span className="bench-value">{fmt(tickets?.month)}</span></div>
+        </div>
+
+        {closers.length > 0 && (
+          <div style={{ marginBottom:20 }}>
+            <div className="chart-title" style={{marginBottom:10}}>Top Closers</div>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              {closers.map((c,i) => (
+                <div key={i} style={{ background:'var(--purple-dim)', border:'1px solid var(--border)', borderRadius:8, padding:'6px 12px', fontSize:13 }}>
+                  <span style={{ color:'var(--purple-lite)', fontWeight:600 }}>{c.closer_name}</span>
+                  <span style={{ color:'var(--muted)', marginLeft:6 }}>{c.closed_count} closed</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="chart-title" style={{marginBottom:10}}>Recent Tickets</div>
+        {!ticketList.length
+          ? <p style={{ color:'var(--muted)', fontSize:13 }}>No tickets logged yet — make sure the bot is running.</p>
+          : <table>
+              <thead>
+                <tr>
+                  <th>Title</th>
+                  <th>Opened by</th>
+                  <th>Closed by</th>
+                  <th>Status</th>
+                  <th>Opened</th>
+                </tr>
+              </thead>
+              <tbody>
+                {ticketList.map((t,i) => (
+                  <tr key={i}>
+                    <td style={{ maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{t.title}</td>
+                    <td style={{ color:'var(--purple-lite)' }}>{t.opener_name}</td>
+                    <td style={{ color:'var(--muted)' }}>{t.closer_name ?? '—'}</td>
+                    <td>
+                      <span className={`action-badge ${t.status === 'open' ? 'action-timeout' : 'action-msg'}`}>
+                        {t.status}
+                      </span>
+                    </td>
+                    <td style={{ color:'var(--muted)', fontSize:12 }}>{ago(t.opened_at)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+        }
+      </div>
+
       <p className="section-title">Raw Activity Feed</p>
       <div className="feed-card">
         <div className="chart-title">Recent Messages</div>
@@ -214,3 +286,4 @@ export default function App() {
     </div>
   );
 }
+// Tickets section injected via patch — see TicketsSection below
